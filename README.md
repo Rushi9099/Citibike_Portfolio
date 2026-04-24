@@ -11,10 +11,10 @@ This is the 3.3 deliverable — the public-facing companion to the Power BI dash
 
 | Resource | URL |
 |---|---|
-| **Portfolio site** *(this repo)* | _to be filled once GitHub Pages is enabled_ |
-| **Solution App** | https://citi-bike-dashboard.vercel.app/ |
+| **Portfolio site** *(this repo)* | **[citibike-portfolio.vercel.app](https://citibike-portfolio.vercel.app/)** |
+| **Solution App** | [citi-bike-dashboard.vercel.app](https://citi-bike-dashboard.vercel.app/) |
 | **Power BI (.pbix)** | [Google Drive](https://drive.google.com/file/d/1sstMB7H-AJH3yhLMCLPFNX9jL8o-PNX1/view?usp=sharing) |
-| **Dashboard source repo** | https://github.com/Rushi9099/CitiBike_Dashboard |
+| **Dashboard source repo** | [github.com/Rushi9099/CitiBike_Dashboard](https://github.com/Rushi9099/CitiBike_Dashboard) |
 
 ---
 
@@ -27,7 +27,7 @@ A single-page static site (`index.html`) covering the 12 sections required by th
 3. Problem Context & Stakeholders
 4. Research & Insights
 5. Dataset & Design (ER diagram, data flow, cleaning steps)
-6. Dashboard Insights (6 Power BI pages explained)
+6. Dashboard Insights (all 7 Power BI pages explained)
 7. Proposed Solution (Enterprise Architecture diagram, key components)
 8. Embedded Solution App (live iframe of Vercel deployment)
 9. Benefits — Data 1 vs Data 2 (KPI before/after comparison)
@@ -45,8 +45,8 @@ A single-page static site (`index.html`) covering the 12 sections required by th
 | Markup | Vanilla HTML | No build, anyone can edit |
 | Styling | Tailwind CSS via Play CDN | Utility classes, zero config |
 | Typography | Google Fonts — Space Grotesk + DM Sans + JetBrains Mono | Modern, readable |
-| Diagrams | [Mermaid.js](https://mermaid.js.org/) via CDN | ER, Enterprise Architecture, Gantt — all text-based, diff-friendly |
-| Deploy | GitHub Pages (static hosting) | Free, auto-deploy on `git push` |
+| Diagrams | [Mermaid.js](https://mermaid.js.org/) via CDN | ER + Enterprise Architecture — text-based, diff-friendly |
+| Deploy | [Vercel](https://vercel.com/) (static hosting) | Global CDN, auto HTTPS, auto-redeploy on `git push` |
 
 ---
 
@@ -86,15 +86,38 @@ Then open http://localhost:8080/
 
 ---
 
-## Deployment to GitHub Pages
+## Deployment
 
-1. Push this folder to a GitHub repo (e.g. `CitiBike_Portfolio`).
-2. In the repo on GitHub → **Settings** → **Pages**.
-3. Under **Source**, pick **Deploy from a branch**.
-4. Select **`main`** / root, click **Save**.
-5. Wait ~60 seconds — GitHub will publish at `https://<username>.github.io/CitiBike_Portfolio/`.
+The site is deployed on **Vercel** and auto-redeploys on every push to `main`.
 
-From then on, every push to `main` auto-redeploys.
+**Live URL:** [citibike-portfolio.vercel.app](https://citibike-portfolio.vercel.app/)
+
+### First-time deploy (already done)
+
+1. Sign in at [vercel.com](https://vercel.com/) with GitHub.
+2. **Add New → Project → Import** `Rushi9099/Citibike_Portfolio`.
+3. On the configuration screen:
+   - **Framework Preset:** Other
+   - **Root Directory:** `./`
+   - **Build Command:** *(leave empty — no build step)*
+   - **Output Directory:** *(leave empty)*
+4. Click **Deploy**. Done in ~30 seconds.
+
+### Subsequent deploys
+
+Just push to `main`:
+
+```bash
+git add .
+git commit -m "message"
+git push
+```
+
+Vercel picks it up automatically. Preview deployments are created for every branch and PR.
+
+### Alternative: GitHub Pages
+
+If Vercel ever goes down, this site also works as-is on GitHub Pages (Settings → Pages → Deploy from branch → `main` / root). No code changes needed.
 
 ---
 
