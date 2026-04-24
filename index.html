@@ -1,0 +1,1235 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Citi Bike Demand & Station-Imbalance Decision Support System. Master's Research Project by Group 15, Saint Louis University." />
+  <title>Citi Bike DSS · Group 15 · Portfolio</title>
+
+  <!-- Tailwind via Play CDN (no build step) -->
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg:       '#060e1a',
+            surface:  '#0a1929',
+            card:     '#0f2d4a',
+            border:   '#1e3a5f',
+            text:     '#e2e8f0',
+            muted:    '#94a3b8',
+            accent:   '#00d4aa',
+            accent2:  '#3b82f6',
+            warn:     '#f97316',
+            danger:   '#ef4444',
+            electric: '#a855f7',
+          },
+          fontFamily: {
+            display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+            sans:    ['"DM Sans"', 'system-ui', 'sans-serif'],
+            mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    html { font-family: 'DM Sans', system-ui, sans-serif; }
+    body { background: #060e1a; color: #e2e8f0; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+    .font-mono    { font-family: 'JetBrains Mono', monospace; }
+
+    /* Animated gradient blob */
+    .blob {
+      position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+    }
+    .blob::before, .blob::after {
+      content: ''; position: absolute; border-radius: 50%; filter: blur(100px); opacity: .35;
+      animation: float 18s ease-in-out infinite;
+    }
+    .blob::before { width: 500px; height: 500px; background: #00d4aa; top: -100px; left: -100px; }
+    .blob::after  { width: 400px; height: 400px; background: #3b82f6; bottom: -100px; right: -100px; animation-delay: -9s; }
+    @keyframes float {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50%     { transform: translate(40px, 60px) scale(1.1); }
+    }
+
+    /* Reveal-on-scroll */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.on { opacity: 1; transform: none; }
+
+    /* Section divider */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #1e3a5f 20%, #1e3a5f 80%, transparent);
+    }
+
+    /* Mermaid diagram wrapper */
+    .mermaid-wrap { background: #0a1929; border: 1px solid #1e3a5f; border-radius: 12px; padding: 1.5rem; overflow-x: auto; }
+    .mermaid { display: flex; justify-content: center; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: #0a1929; }
+    ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2d5380; }
+
+    /* Underline link animation */
+    .link-u { position: relative; }
+    .link-u::after {
+      content: ''; position: absolute; left: 0; bottom: -2px; width: 100%; height: 1px;
+      background: currentColor; transform: scaleX(0); transform-origin: right;
+      transition: transform .3s ease;
+    }
+    .link-u:hover::after { transform: scaleX(1); transform-origin: left; }
+
+    /* Nav highlight */
+    .nav-link.active { color: #00d4aa; }
+
+    /* Chip */
+    .chip {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .35rem .75rem; border-radius: 999px;
+      background: rgba(0,212,170,.08); border: 1px solid rgba(0,212,170,.3);
+      color: #00d4aa; font-size: .75rem; font-weight: 600;
+    }
+  </style>
+</head>
+
+<body class="bg-bg text-text antialiased">
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<nav id="nav" class="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-surface/80 border-b border-border">
+  <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+    <a href="#top" class="font-display font-bold text-accent text-lg">◆ Citi Bike DSS</a>
+    <div class="hidden lg:flex items-center gap-6 text-sm text-muted">
+      <a href="#problem"    class="nav-link hover:text-accent transition">Problem</a>
+      <a href="#data"       class="nav-link hover:text-accent transition">Data</a>
+      <a href="#dashboard"  class="nav-link hover:text-accent transition">Dashboard</a>
+      <a href="#solution"   class="nav-link hover:text-accent transition">Solution</a>
+      <a href="#impact"     class="nav-link hover:text-accent transition">Impact</a>
+      <a href="#reflection" class="nav-link hover:text-accent transition">Reflection</a>
+      <a href="#team"       class="nav-link hover:text-accent transition">Team</a>
+    </div>
+    <a href="https://citi-bike-dashboard.vercel.app/" target="_blank" rel="noopener"
+       class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-surface text-sm font-semibold hover:bg-white transition">
+       Launch App <span>→</span>
+    </a>
+    <button id="burger" class="lg:hidden text-2xl">☰</button>
+  </div>
+  <div id="mobile-menu" class="hidden lg:hidden bg-surface border-t border-border">
+    <div class="px-6 py-4 flex flex-col gap-3 text-sm text-muted">
+      <a href="#problem"    class="py-1 hover:text-accent">Problem</a>
+      <a href="#data"       class="py-1 hover:text-accent">Data</a>
+      <a href="#dashboard"  class="py-1 hover:text-accent">Dashboard</a>
+      <a href="#solution"   class="py-1 hover:text-accent">Solution</a>
+      <a href="#impact"     class="py-1 hover:text-accent">Impact</a>
+      <a href="#reflection" class="py-1 hover:text-accent">Reflection</a>
+      <a href="#team"       class="py-1 hover:text-accent">Team</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<header id="top" class="relative pt-32 pb-24 px-6 overflow-hidden">
+  <div class="blob"></div>
+  <div class="max-w-7xl mx-auto">
+    <div class="chip mb-6 reveal">
+      <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
+      Master's Research Project · Saint Louis University · 2026
+    </div>
+    <h1 class="font-display font-bold text-4xl md:text-6xl lg:text-7xl leading-[1.05] max-w-5xl reveal">
+      Citi Bike demand &<br/>
+      <span class="bg-gradient-to-r from-accent via-accent2 to-electric bg-clip-text text-transparent">station-imbalance</span><br/>
+      decision support.
+    </h1>
+    <p class="mt-6 text-lg md:text-xl text-muted max-w-3xl leading-relaxed reveal">
+      A data-driven system that turns <span class="text-text font-semibold">1 million May 2025 trips</span> into
+      actionable insights for service planners, operations managers, and rebalancing teams —
+      and quantifies what changes if we act on them.
+    </p>
+
+    <div class="mt-10 flex flex-wrap items-center gap-4 reveal">
+      <a href="https://citi-bike-dashboard.vercel.app/" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent text-surface font-semibold hover:bg-white transition shadow-lg shadow-accent/20">
+         Launch Solution App <span>→</span>
+      </a>
+      <a href="https://drive.google.com/file/d/1sstMB7H-AJH3yhLMCLPFNX9jL8o-PNX1/view?usp=sharing" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border hover:border-accent hover:text-accent transition">
+         Download Power BI <span>↓</span>
+      </a>
+      <a href="https://github.com/Rushi9099/CitiBike_Dashboard" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border hover:border-accent hover:text-accent transition">
+         View Source <span>↗</span>
+      </a>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-px bg-border rounded-2xl overflow-hidden reveal">
+      <div class="bg-surface p-6">
+        <div class="font-mono text-3xl md:text-4xl text-white font-bold">994.6K</div>
+        <div class="text-xs text-muted uppercase tracking-wider mt-1">Trips analyzed</div>
+      </div>
+      <div class="bg-surface p-6">
+        <div class="font-mono text-3xl md:text-4xl text-white font-bold">2,140</div>
+        <div class="text-xs text-muted uppercase tracking-wider mt-1">Stations</div>
+      </div>
+      <div class="bg-surface p-6">
+        <div class="font-mono text-3xl md:text-4xl text-accent font-bold">81.08%</div>
+        <div class="text-xs text-muted uppercase tracking-wider mt-1">Member share (MUR)</div>
+      </div>
+      <div class="bg-surface p-6">
+        <div class="font-mono text-3xl md:text-4xl text-warn font-bold">28.4%</div>
+        <div class="text-xs text-muted uppercase tracking-wider mt-1">Peak-hour demand (PHDR)</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════ EXECUTIVE SUMMARY ══════════════════ -->
+<section id="summary" class="py-20 px-6 bg-surface">
+  <div class="max-w-5xl mx-auto reveal">
+    <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">01 · Executive Summary</div>
+    <h2 class="font-display font-bold text-3xl md:text-5xl mb-8">The 60-second version.</h2>
+    <div class="prose prose-invert prose-lg max-w-none text-muted leading-relaxed">
+      <p>
+        New York City's Citi Bike system serves over one million rides every month, yet riders still encounter empty docks during morning commutes
+        and overflowing stations by evening. Our Master's Research Project builds a
+        <span class="text-text font-semibold">Decision Support System (DSS)</span> that analyzes the full May 2025 trip-history dataset (994,641 cleaned trips across 2,140 stations) and surfaces three operational KPIs:
+        <span class="text-accent font-semibold">Peak Hour Demand Ratio (PHDR)</span>, <span class="text-accent font-semibold">Member Utilization Rate (MUR)</span>, and <span class="text-accent font-semibold">Station Imbalance Index (SII)</span>.
+      </p>
+      <p>
+        The DSS is delivered in two coordinated layers. A <span class="text-text font-semibold">Power BI dashboard</span> gives analysts and
+        planners deep exploratory access — 7 linked pages covering demand patterns, station performance, rider
+        behaviour, and imbalance hotspots. A complementary <span class="text-text font-semibold">web application</span>
+        (React + Vite, deployed on Vercel) mirrors those views for stakeholders without Power BI Desktop, and adds an
+        interactive <span class="text-text font-semibold">Comparison simulator</span> that lets leaders drag sliders for
+        peak-hour smoothing, member conversion, and rebalancing intensity and see the projected KPI impact in real time.
+      </p>
+      <p>
+        Findings show demand is sharply concentrated in 7–9 AM and 5–7 PM windows, electric bikes dominate at ~70% of
+        all trips, and station imbalance is structural rather than random — the top 15 "losing" stations bleed over 2,000
+        bikes each per month while the top "gaining" stations accumulate a comparable surplus. Our simulator indicates
+        that a realistic operational envelope (10% peak smoothing, 14% member conversion, 20% rebalancing improvement)
+        would move the MUR to 92% and cut average station imbalance by ~20% — measurable wins from low-capex
+        operational changes.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PROBLEM + STAKEHOLDERS ══════════════════ -->
+<section id="problem" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">02 · Problem Context &amp; Stakeholders</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">When the bikes are in the <span class="text-warn">wrong places</span> at the <span class="text-warn">wrong times</span>.</h2>
+      <p class="text-muted text-lg max-w-3xl">
+        Bike-share networks fail quietly. There is no outage page, no error dialog — just a rider walking up to an empty dock at 8:07 AM, giving up, and taking the subway.
+        That is the problem our project exists to fix.
+      </p>
+    </div>
+
+    <!-- Problem bullets -->
+    <div class="grid md:grid-cols-3 gap-5 mt-12">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-danger/60 transition">
+        <div class="w-10 h-10 rounded-lg bg-danger/15 text-danger flex items-center justify-center text-xl mb-4">!</div>
+        <h3 class="font-display font-semibold text-lg mb-2">Peak-hour stress</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          28.4% of daily rides occur inside the 7–9 AM and 5–7 PM windows. Commuters compete for the same bikes at the same stations, creating empty-dock failures.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-warn/60 transition">
+        <div class="w-10 h-10 rounded-lg bg-warn/15 text-warn flex items-center justify-center text-xl mb-4">⇄</div>
+        <h3 class="font-display font-semibold text-lg mb-2">Structural station imbalance</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          The top 15 departure-heavy stations lose 2,000–3,200 bikes each per month. Their mirrors — destination-heavy stations in Midtown and the Village — overflow by comparable amounts.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-accent2/60 transition">
+        <div class="w-10 h-10 rounded-lg bg-accent2/15 text-accent2 flex items-center justify-center text-xl mb-4">$</div>
+        <h3 class="font-display font-semibold text-lg mb-2">Rebalancing cost</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          Manual truck rebalancing is labor-intensive and reactive. Without data-driven targeting, teams spend cycles on low-impact stations while high-stress ones stay under-served.
+        </p>
+      </div>
+    </div>
+
+    <!-- Stakeholders -->
+    <div class="mt-20 reveal">
+      <h3 class="font-display font-semibold text-2xl md:text-3xl mb-2">Who is affected</h3>
+      <p class="text-muted mb-10">Every view in the dashboard is built for a specific user with a specific decision.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="w-10 h-10 rounded-full bg-accent/15 text-accent flex items-center justify-center font-semibold mb-4">SP</div>
+        <h4 class="font-display font-semibold mb-1">Service Planners</h4>
+        <p class="text-xs text-muted leading-relaxed">Use the Demand page to plan bike allocation for peak windows and weekday surges.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="w-10 h-10 rounded-full bg-accent2/15 text-accent2 flex items-center justify-center font-semibold mb-4">OM</div>
+        <h4 class="font-display font-semibold mb-1">Operations Managers</h4>
+        <p class="text-xs text-muted leading-relaxed">Use the Imbalance page to route rebalancing trucks to the highest-pressure stations first.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="w-10 h-10 rounded-full bg-warn/15 text-warn flex items-center justify-center font-semibold mb-4">LD</div>
+        <h4 class="font-display font-semibold mb-1">Leadership</h4>
+        <p class="text-xs text-muted leading-relaxed">Use KPI cards and the Comparison simulator for system health and strategic direction.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="w-10 h-10 rounded-full bg-electric/15 text-electric flex items-center justify-center font-semibold mb-4">RT</div>
+        <h4 class="font-display font-semibold mb-1">Rebalancing Teams</h4>
+        <p class="text-xs text-muted leading-relaxed">Use station-level detail to prioritize which stations need immediate attention each shift.</p>
+      </div>
+    </div>
+
+    <!-- Ridership stakeholders -->
+    <div class="mt-12 bg-gradient-to-br from-card to-surface border border-border rounded-2xl p-6 md:p-8 reveal">
+      <div class="flex flex-col md:flex-row md:items-center gap-6">
+        <div class="flex-1">
+          <div class="text-xs uppercase tracking-wider text-muted font-semibold mb-2">End users</div>
+          <h4 class="font-display font-semibold text-xl mb-2">1M+ riders per month — 81% members, 19% casual</h4>
+          <p class="text-sm text-muted">Riders are the ultimate beneficiary. Every percentage point of improved balance translates directly into fewer empty-dock failures at the moment someone needs a bike the most.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-center">
+          <div><div class="font-mono text-3xl text-accent font-bold">806K</div><div class="text-xs text-muted uppercase tracking-wide">Member trips</div></div>
+          <div><div class="font-mono text-3xl text-warn font-bold">188K</div><div class="text-xs text-muted uppercase tracking-wide">Casual trips</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ RESEARCH & INSIGHTS ══════════════════ -->
+<section id="research" class="py-20 px-6 bg-surface">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">03 · Research &amp; Insights</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">What we read before we built.</h2>
+      <p class="text-muted text-lg max-w-3xl">
+        Before touching a single chart, we grounded our project in published research on bike-share rebalancing, demand forecasting, and NYC-specific mobility patterns.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-5 mt-12">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-2">Academic literature</div>
+        <h3 class="font-display font-semibold mb-2">Rebalancing theory</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          Prior studies on bike-share systems (NYC, Paris, London, DC) show that ~5–10% of station-pairs drive the majority of imbalance. Our findings replicate this pattern strongly — the top 15 stations account for disproportionate rebalancing cost.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-2">Industry reports</div>
+        <h3 class="font-display font-semibold mb-2">Peak-hour concentration</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          Transit research consistently reports that urban commuter modes peak within a narrow 4-hour daily window. Our PHDR KPI operationalizes that insight with a threshold (28.4% today) we can move with policy.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-2">Open data</div>
+        <h3 class="font-display font-semibold mb-2">Citi Bike system data</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          Lyft publishes Citi Bike trip history as monthly CSVs under a public data license. This is the primary source underpinning the entire project — real data, not synthetic.
+        </p>
+      </div>
+    </div>
+
+    <!-- Key takeaways from research -->
+    <div class="mt-12 bg-card border border-border rounded-2xl p-8 reveal">
+      <h3 class="font-display font-semibold text-xl mb-4">What the research told us to look for</h3>
+      <ul class="grid md:grid-cols-2 gap-x-8 gap-y-3 text-sm text-muted">
+        <li class="flex gap-3"><span class="text-accent mt-1">✓</span><span>Directional flow asymmetry between commercial and residential areas</span></li>
+        <li class="flex gap-3"><span class="text-accent mt-1">✓</span><span>Member vs casual behavior diverges sharply on weekends</span></li>
+        <li class="flex gap-3"><span class="text-accent mt-1">✓</span><span>Electric bikes take longer-distance but shorter-duration trips</span></li>
+        <li class="flex gap-3"><span class="text-accent mt-1">✓</span><span>Rebalancing cost scales with imbalance squared — tails matter</span></li>
+        <li class="flex gap-3"><span class="text-accent mt-1">✓</span><span>Weather drives ~20% of daily variance (not modeled here, noted as limitation)</span></li>
+        <li class="flex gap-3"><span class="text-accent mt-1">✓</span><span>Converting casual → members smooths peak load</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ DATA & DASHBOARD ══════════════════ -->
+<section id="data" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">04 · Dataset &amp; Design</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">One CSV. A million rides. <br/>A cleaned, modelled, queryable source of truth.</h2>
+      <p class="text-muted text-lg max-w-3xl">
+        Every insight on this site traces back to a single dataset: Citi Bike's May 2025 trip-history CSV — 1,000,000 raw rows reduced to 994,641 after cleaning.
+      </p>
+    </div>
+
+    <!-- Raw fields -->
+    <div class="grid lg:grid-cols-2 gap-6 mt-12">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-3">Raw input schema</div>
+        <h3 class="font-display font-semibold text-lg mb-4">Citi Bike trip-history CSV</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-xs uppercase text-muted border-b border-border">
+              <tr><th class="text-left py-2">Column</th><th class="text-left py-2">Type</th><th class="text-left py-2">Notes</th></tr>
+            </thead>
+            <tbody class="divide-y divide-border/50">
+              <tr><td class="py-2 font-mono text-accent">ride_id</td><td class="text-muted">string</td><td class="text-muted">Unique per ride</td></tr>
+              <tr><td class="py-2 font-mono text-accent">rideable_type</td><td class="text-muted">enum</td><td class="text-muted">classic_bike / electric_bike</td></tr>
+              <tr><td class="py-2 font-mono text-accent">started_at / ended_at</td><td class="text-muted">datetime</td><td class="text-muted">UTC timestamps</td></tr>
+              <tr><td class="py-2 font-mono text-accent">start_station_name / id</td><td class="text-muted">string</td><td class="text-muted">Departure location</td></tr>
+              <tr><td class="py-2 font-mono text-accent">end_station_name / id</td><td class="text-muted">string</td><td class="text-muted">Arrival location</td></tr>
+              <tr><td class="py-2 font-mono text-accent">start_lat / lng · end_lat / lng</td><td class="text-muted">float</td><td class="text-muted">Geo coordinates</td></tr>
+              <tr><td class="py-2 font-mono text-accent">member_casual</td><td class="text-muted">enum</td><td class="text-muted">member / casual</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-3">Power Query cleaning</div>
+        <h3 class="font-display font-semibold text-lg mb-4">5 transformation steps</h3>
+        <ol class="space-y-3 text-sm text-muted">
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">01</span><span><strong class="text-text">Null filtering</strong> — drop rides missing start/end station or rider type (~5,300 rows).</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">02</span><span><strong class="text-text">Duration filter</strong> — exclude rides under 60 s (re-docks) or over 24 h (abandoned).</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">03</span><span><strong class="text-text">Type coercion</strong> — enforce datetime, numeric, and categorical types.</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">04</span><span><strong class="text-text">Derived fields</strong> — <code class="font-mono text-accent">hour</code>, <code class="font-mono text-accent">day</code>, <code class="font-mono text-accent">trip_duration_min</code>, <code class="font-mono text-accent">date</code>.</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">05</span><span><strong class="text-text">Text trim</strong> — normalize station names for join consistency.</span></li>
+        </ol>
+        <div class="mt-5 pt-5 border-t border-border flex items-center gap-3 text-sm">
+          <span class="chip">Result</span>
+          <span class="text-muted">1,000,000 → <span class="font-mono text-accent">994,641</span> trips · 2,141 → <span class="font-mono text-accent">2,140</span> stations</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ER Diagram -->
+    <div class="mt-12 reveal">
+      <div class="text-xs uppercase text-muted tracking-wider mb-3">Data model</div>
+      <h3 class="font-display font-semibold text-2xl mb-2">Entity-Relationship Diagram</h3>
+      <p class="text-muted mb-6 max-w-3xl">Trips is the fact table; Stations and DateTable are shared dimensions; Start/EndStationSummary are aggregated views that feed the imbalance KPI; three Parameter tables drive the Comparison simulator.</p>
+      <div class="mermaid-wrap reveal">
+<pre class="mermaid">
+erDiagram
+    Trips ||--o{ Stations : "start_station"
+    Trips ||--o{ Stations : "end_station"
+    Trips ||--o{ DateTable : "on date"
+    Stations ||--|{ StartStationSummary : "aggregates"
+    Stations ||--|{ EndStationSummary : "aggregates"
+
+    Trips {
+        string ride_id PK
+        string rideable_type
+        datetime started_at
+        datetime ended_at
+        string start_station_id FK
+        string end_station_id FK
+        float start_lat
+        float start_lng
+        float end_lat
+        float end_lng
+        enum member_casual
+        int trip_duration_min
+        int hour
+        string day
+        date date
+    }
+    Stations {
+        string station_id PK
+        string station_name
+        float lat
+        float lng
+    }
+    DateTable {
+        date date PK
+        string day
+        int week
+        string month
+    }
+    StartStationSummary {
+        string station_id FK
+        int starts
+    }
+    EndStationSummary {
+        string station_id FK
+        int ends
+    }
+    PeakHourSmoothingPct {
+        int value PK
+    }
+    MemberConversionPct {
+        int value PK
+    }
+    RebalancingImprovementPct {
+        int value PK
+    }
+</pre>
+      </div>
+    </div>
+
+    <!-- Data flow pipeline -->
+    <div class="mt-12 reveal">
+      <div class="text-xs uppercase text-muted tracking-wider mb-3">Pipeline</div>
+      <h3 class="font-display font-semibold text-2xl mb-6">From raw CSV to live dashboard</h3>
+      <div class="bg-card border border-border rounded-2xl p-4">
+        <img src="assets/img/data-pipeline.png" alt="Data flow pipeline diagram"
+             class="rounded-xl w-full" loading="lazy" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ DASHBOARD INSIGHTS ══════════════════ -->
+<section id="dashboard" class="py-20 px-6 bg-surface">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">05 · Dashboard insights</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">What the data is trying to tell us.</h2>
+      <p class="text-muted text-lg max-w-3xl">
+        Six analytical pages in Power BI. Each answers a specific question a specific user actually asks.
+      </p>
+    </div>
+
+    <!-- Dashboard card 1: HOME -->
+    <div class="mt-12 grid md:grid-cols-5 gap-6 items-start">
+      <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal">
+        <img src="assets/img/pbi-home.png" alt="Citi Bike dashboard Home page"
+             class="w-full" loading="lazy" />
+      </div>
+      <div class="md:col-span-2 reveal">
+        <div class="chip mb-3">Page 1</div>
+        <h3 class="font-display font-semibold text-2xl mb-3">Home · system overview</h3>
+        <p class="text-sm text-muted leading-relaxed mb-4">
+          The Home page establishes scale at a glance. Four KPI cards and a single daily-volume line chart answer the first question leadership always asks: <em>"how big is this, and is it growing?"</em>
+        </p>
+        <ul class="space-y-2 text-sm text-muted">
+          <li class="flex gap-2"><span class="text-accent">→</span><span>~995K trips in the analyzed period (May 2025)</span></li>
+          <li class="flex gap-2"><span class="text-accent">→</span><span>12.84 min average trip duration — short urban hops</span></li>
+          <li class="flex gap-2"><span class="text-accent">→</span><span>Clear weekly rhythm: Thu &amp; Sat peak, Sun &amp; Mon dip</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Dashboard card 2: DEMAND -->
+    <div class="mt-14 grid md:grid-cols-5 gap-6 items-start">
+      <div class="md:col-span-2 reveal order-2 md:order-1">
+        <div class="chip mb-3" style="background:rgba(59,130,246,.08); border-color:rgba(59,130,246,.3); color:#3b82f6;">Page 2</div>
+        <h3 class="font-display font-semibold text-2xl mb-3">Demand · when are riders riding?</h3>
+        <p class="text-sm text-muted leading-relaxed mb-4">
+          A bi-modal daily distribution jumps out immediately: commuter spikes at 8 AM and 5–6 PM, with a softer midday shoulder. Saturday is the single largest day of the week, driven heavily by casual riders.
+        </p>
+        <ul class="space-y-2 text-sm text-muted">
+          <li class="flex gap-2"><span class="text-accent2">→</span><span>5 PM is the single busiest hour (89K trips)</span></li>
+          <li class="flex gap-2"><span class="text-accent2">→</span><span>Electric bikes take 69.62% of all trips</span></li>
+          <li class="flex gap-2"><span class="text-accent2">→</span><span>Saturday volume (182K) exceeds any weekday except Thursday</span></li>
+        </ul>
+      </div>
+      <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal order-1 md:order-2">
+        <img src="assets/img/pbi-demand.png" alt="Demand Analysis dashboard page"
+             class="w-full" loading="lazy" />
+      </div>
+    </div>
+
+    <!-- Dashboard card 3: STATIONS -->
+    <div class="mt-14 grid md:grid-cols-5 gap-6 items-start">
+      <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal">
+        <img src="assets/img/pbi-stations.png" alt="Station Performance dashboard"
+             class="w-full" loading="lazy" />
+      </div>
+      <div class="md:col-span-2 reveal">
+        <div class="chip mb-3" style="background:rgba(0,212,170,.08); border-color:rgba(0,212,170,.3);">Page 3</div>
+        <h3 class="font-display font-semibold text-2xl mb-3">Stations · where the action is</h3>
+        <p class="text-sm text-muted leading-relaxed mb-4">
+          Side-by-side top-10 start and end station bars reveal a pattern: busiest start stations are residential edges (Brooklyn waterfront, UES), busiest end stations are commercial cores (Midtown, Union Square).
+        </p>
+        <ul class="space-y-2 text-sm text-muted">
+          <li class="flex gap-2"><span class="text-accent">→</span><span>West St &amp; Chambers: 3,228 departures, only 64 returns</span></li>
+          <li class="flex gap-2"><span class="text-accent">→</span><span>University Pl &amp; E 14 St: 5,508 arrivals (absorbs Village traffic)</span></li>
+          <li class="flex gap-2"><span class="text-accent">→</span><span>Map view confirms Manhattan density vs Brooklyn spread</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Dashboard card 4: RIDERS -->
+    <div class="mt-14 grid md:grid-cols-5 gap-6 items-start">
+      <div class="md:col-span-2 reveal order-2 md:order-1">
+        <div class="chip mb-3" style="background:rgba(168,85,247,.08); border-color:rgba(168,85,247,.3); color:#a855f7;">Page 4</div>
+        <h3 class="font-display font-semibold text-2xl mb-3">Riders · members vs casuals</h3>
+        <p class="text-sm text-muted leading-relaxed mb-4">
+          Members are predictable commuters (short, frequent, peak-hour). Casuals are leisure riders (longer trips, weekend-biased, tourist-pattern midday bump). Their hourly curves overlap only in the morning spike.
+        </p>
+        <ul class="space-y-2 text-sm text-muted">
+          <li class="flex gap-2"><span class="text-electric">→</span><span>Member: 11.3 min avg · Casual: 19.2 min avg (+70%)</span></li>
+          <li class="flex gap-2"><span class="text-electric">→</span><span>Both groups prefer electric bikes (~70% share)</span></li>
+          <li class="flex gap-2"><span class="text-electric">→</span><span>Casuals visibly peak at 2–4 PM (tourist window)</span></li>
+        </ul>
+      </div>
+      <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal order-1 md:order-2">
+        <img src="assets/img/pbi-riders.png" alt="Rider Patterns dashboard"
+             class="w-full" loading="lazy" />
+      </div>
+    </div>
+
+    <!-- Dashboard card 5: IMBALANCE -->
+    <div class="mt-14 grid md:grid-cols-5 gap-6 items-start">
+      <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal">
+        <img src="assets/img/pbi-imbalance.png" alt="Station Imbalance dashboard"
+             class="w-full" loading="lazy" />
+      </div>
+      <div class="md:col-span-2 reveal">
+        <div class="chip mb-3" style="background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.3); color:#ef4444;">Page 5 · core differentiator</div>
+        <h3 class="font-display font-semibold text-2xl mb-3">Imbalance · the station rebalancing problem</h3>
+        <p class="text-sm text-muted leading-relaxed mb-4">
+          The red-vs-blue mirror is the single most actionable view in the entire dashboard. Every red bar on the left has a blue counterpart — a physical bike that needs to be picked up somewhere and dropped somewhere else.
+        </p>
+        <ul class="space-y-2 text-sm text-muted">
+          <li class="flex gap-2"><span class="text-danger">→</span><span>Top 15 "losers" bleed 2,000–3,200 bikes each per month</span></li>
+          <li class="flex gap-2"><span class="text-accent2">→</span><span>Top 15 "gainers" accumulate a comparable surplus</span></li>
+          <li class="flex gap-2"><span class="text-warn">→</span><span>Imbalance is structural, not random — same stations every day</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Dashboard card 6: DATA FLOW -->
+    <div class="mt-14 grid md:grid-cols-5 gap-6 items-start">
+      <div class="md:col-span-2 reveal order-2 md:order-1">
+        <div class="chip mb-3" style="background:rgba(249,115,22,.08); border-color:rgba(249,115,22,.3); color:#f97316;">Page 6</div>
+        <h3 class="font-display font-semibold text-2xl mb-3">Data Flow · system logic</h3>
+        <p class="text-sm text-muted leading-relaxed mb-4">
+          A reference page for stakeholders who want to understand <em>how</em> the numbers are calculated. It covers input fields, cleaning steps, KPI logic, dashboard features, and target users in one scannable view.
+        </p>
+      </div>
+      <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal order-1 md:order-2">
+        <img src="assets/img/pbi-dataflow.png" alt="Data Flow and System Logic dashboard"
+             class="w-full" loading="lazy" />
+      </div>
+    </div>
+
+    <!-- Key insights summary -->
+    <div class="mt-16 bg-gradient-to-br from-card to-surface border border-border rounded-2xl p-8 reveal">
+      <h3 class="font-display font-semibold text-xl mb-5">The four insights that shaped the solution</h3>
+      <div class="grid md:grid-cols-2 gap-5 text-sm">
+        <div class="border-l-2 border-accent pl-4">
+          <div class="font-semibold mb-1">1 · Demand is predictably peaky</div>
+          <p class="text-muted">28.4% of trips in 4 hours means smoothing policy (pricing, incentives) can move the needle significantly.</p>
+        </div>
+        <div class="border-l-2 border-accent2 pl-4">
+          <div class="font-semibold mb-1">2 · Imbalance is structural</div>
+          <p class="text-muted">The same stations lose or gain bikes every day. Targeted rebalancing beats general effort.</p>
+        </div>
+        <div class="border-l-2 border-warn pl-4">
+          <div class="font-semibold mb-1">3 · Casuals are a conversion opportunity</div>
+          <p class="text-muted">Casual riders are 19% of trips but 40% of revenue potential — converting them lifts MUR and smooths peaks.</p>
+        </div>
+        <div class="border-l-2 border-electric pl-4">
+          <div class="font-semibold mb-1">4 · Electric dominates — plan fleet mix accordingly</div>
+          <p class="text-muted">70% of riders choose electric. Fleet procurement and charging infrastructure should follow.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PROPOSED SOLUTION ══════════════════ -->
+<section id="solution" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">06 · Proposed solution</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">A two-layer DSS: <span class="text-accent">analyst-deep</span> + <span class="text-accent2">stakeholder-wide</span>.</h2>
+      <p class="text-muted text-lg max-w-3xl">
+        We did not build <em>one</em> dashboard — we built a system. Power BI for analysts who live in data. A React web app for everyone else who just needs to act on it.
+      </p>
+    </div>
+
+    <!-- Enterprise architecture diagram -->
+    <div class="mt-12 reveal">
+      <div class="text-xs uppercase text-muted tracking-wider mb-3">Enterprise architecture</div>
+      <h3 class="font-display font-semibold text-2xl mb-6">How the layers fit together</h3>
+      <div class="mermaid-wrap">
+<pre class="mermaid">
+flowchart LR
+    A[📄 Citi Bike CSV<br/>May 2025 · 1M rows] --> B[🧹 Power Query<br/>cleaning + type coercion]
+    B --> C[📊 Power BI data model<br/>Trips · Stations · DateTable<br/>DAX measures: PHDR · MUR · SII]
+    C --> D[📈 Power BI Report<br/>7 pages · interactive slicers]
+    C --> E[📦 data.json<br/>pre-aggregated export]
+    E --> F[⚛️ React + Vite app<br/>Recharts visualizations]
+    F --> G[🌐 Vercel CDN<br/>citi-bike-dashboard.vercel.app]
+    D --> H[☁️ Power BI Service<br/>/ Google Drive download]
+
+    H -.->|reads| I[👤 Analyst<br/>deep exploration]
+    G -.->|reads| J[👤 Stakeholder<br/>quick insight + simulator]
+    G -.->|reads| K[👤 Leadership<br/>strategic planning]
+
+    classDef data fill:#0f2d4a,stroke:#1e3a5f,color:#e2e8f0
+    classDef build fill:#0a1929,stroke:#00d4aa,color:#00d4aa
+    classDef out fill:#0a1929,stroke:#3b82f6,color:#3b82f6
+    classDef user fill:transparent,stroke:#94a3b8,color:#94a3b8,stroke-dasharray:5 5
+    class A,B,C,E data
+    class D,F build
+    class G,H out
+    class I,J,K user
+</pre>
+      </div>
+    </div>
+
+    <!-- Feature cards -->
+    <div class="mt-14 reveal">
+      <h3 class="font-display font-semibold text-2xl mb-6">Key components</h3>
+    </div>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-3xl mb-4">📊</div>
+        <h4 class="font-display font-semibold text-lg mb-2">Power BI report (7 pages)</h4>
+        <p class="text-sm text-muted leading-relaxed">Analyst-grade dashboard with linked slicers, cross-filtering, drill-through. The authoritative source for deep exploration.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-3xl mb-4">⚛️</div>
+        <h4 class="font-display font-semibold text-lg mb-2">React web application</h4>
+        <p class="text-sm text-muted leading-relaxed">Public-URL companion that removes the Power BI Desktop friction. Seven pages, identical insights, accessible on any device.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-3xl mb-4">🎚️</div>
+        <h4 class="font-display font-semibold text-lg mb-2">Comparison simulator</h4>
+        <p class="text-sm text-muted leading-relaxed">Three sliders — peak smoothing, member conversion, rebalancing improvement — that recompute PHDR, MUR, and SII in real time.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-3xl mb-4">🎯</div>
+        <h4 class="font-display font-semibold text-lg mb-2">Role-aligned pages</h4>
+        <p class="text-sm text-muted leading-relaxed">Every page is built for one user's one decision. Demand for planners, Imbalance for operations, Comparison for leadership.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-3xl mb-4">⚡</div>
+        <h4 class="font-display font-semibold text-lg mb-2">Real-time filtering</h4>
+        <p class="text-sm text-muted leading-relaxed">Rider-type and bike-type slicers recompute every chart and KPI instantly — zero page reloads.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-3xl mb-4">📱</div>
+        <h4 class="font-display font-semibold text-lg mb-2">Responsive, dark by default</h4>
+        <p class="text-sm text-muted leading-relaxed">Works on phones and 27-inch monitors. Dark theme chosen for long-session analysts.</p>
+      </div>
+    </div>
+
+    <!-- App preview -->
+    <div class="mt-16 reveal">
+      <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          <div class="text-xs uppercase text-muted tracking-wider mb-2">Live preview</div>
+          <h3 class="font-display font-semibold text-2xl">The Solution App — embedded below</h3>
+          <p class="text-sm text-muted mt-1">Use the nav inside the frame. Or <a href="https://citi-bike-dashboard.vercel.app/" target="_blank" rel="noopener" class="text-accent link-u">open full-screen ↗</a>.</p>
+        </div>
+        <a href="https://citi-bike-dashboard.vercel.app/" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-surface font-semibold text-sm hover:bg-white transition">
+          Launch App <span>→</span>
+        </a>
+      </div>
+      <div class="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl shadow-accent/5">
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface">
+          <span class="w-3 h-3 rounded-full bg-danger/70"></span>
+          <span class="w-3 h-3 rounded-full bg-warn/70"></span>
+          <span class="w-3 h-3 rounded-full bg-accent/70"></span>
+          <span class="ml-3 font-mono text-xs text-muted">citi-bike-dashboard.vercel.app</span>
+        </div>
+        <iframe src="https://citi-bike-dashboard.vercel.app/"
+                title="Citi Bike DSS Solution App"
+                class="w-full h-[720px] bg-bg"
+                loading="lazy"></iframe>
+      </div>
+    </div>
+
+    <!-- How to use -->
+    <div class="mt-12 grid md:grid-cols-2 gap-6">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-3">How to use the app</div>
+        <h4 class="font-display font-semibold text-lg mb-4">Quick tutorial</h4>
+        <ol class="space-y-3 text-sm text-muted">
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">1</span><span>Land on <strong class="text-text">Home</strong> — system-wide KPIs and daily volume.</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">2</span><span>Use the top nav to jump between the six analytical pages.</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">3</span><span>On pages with slicers (Demand, Riders), choose a Rider Type or Bike Type — charts refresh instantly.</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">4</span><span>Open <strong class="text-text">Comparison</strong> and drag the three sliders — KPIs and bar charts recalculate live.</span></li>
+          <li class="flex gap-3"><span class="font-mono text-accent shrink-0">5</span><span>Click the <strong class="text-text">Power BI</strong> buttons on Home or Data Flow to download the full <code class="font-mono text-accent">.pbix</code> for deeper analysis.</span></li>
+        </ol>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-3">How it supports decision-making</div>
+        <h4 class="font-display font-semibold text-lg mb-4">What a stakeholder does with it</h4>
+        <ul class="space-y-3 text-sm text-muted">
+          <li><strong class="text-accent">Operations Manager · 7:45 AM:</strong> Opens Imbalance, sees top 5 "losing" stations for the day, dispatches rebalancing trucks.</li>
+          <li><strong class="text-accent2">Service Planner · weekly:</strong> Checks Demand to reallocate e-bike inventory to weekday morning spike stations.</li>
+          <li><strong class="text-warn">Director · quarterly:</strong> Uses Comparison sliders to model a pricing change that would smooth peak demand by 10%, then pitches it to the board with projected MUR.</li>
+          <li><strong class="text-electric">Marketing · monthly:</strong> Checks Riders page to size member-conversion campaign targets by casual-rider hourly pattern.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ IMPACT / BEFORE vs AFTER ══════════════════ -->
+<section id="impact" class="py-20 px-6 bg-surface">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">07 · Benefits · Data 1 vs Data 2</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">From diagnosis to quantified improvement.</h2>
+      <p class="text-muted text-lg max-w-3xl">
+        The Comparison dashboard answers the only question that matters after diagnosis: <em>"if we act on this, by how much do the numbers move?"</em>
+      </p>
+    </div>
+
+    <!-- Before vs after KPI grid -->
+    <div class="mt-12 grid md:grid-cols-3 gap-5">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-3">Peak Hour Demand Ratio</div>
+        <div class="flex items-end gap-4">
+          <div><div class="text-muted text-xs mb-1">Before</div><div class="font-mono text-3xl font-bold text-muted">28.4%</div></div>
+          <div class="text-accent text-xl mb-1">→</div>
+          <div><div class="text-accent text-xs mb-1">After</div><div class="font-mono text-3xl font-bold text-accent">25.56%</div></div>
+        </div>
+        <p class="text-sm text-muted mt-4">At 10% peak-hour smoothing — shifting 2.8pp of trips out of the rush window through pricing and incentives.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-3">Member Utilization Rate</div>
+        <div class="flex items-end gap-4">
+          <div><div class="text-muted text-xs mb-1">Before</div><div class="font-mono text-3xl font-bold text-muted">81.08%</div></div>
+          <div class="text-accent text-xl mb-1">→</div>
+          <div><div class="text-accent text-xs mb-1">After</div><div class="font-mono text-3xl font-bold text-accent">92.43%</div></div>
+        </div>
+        <p class="text-sm text-muted mt-4">At 14% casual-to-member conversion — realistic with a campaign targeting midday casuals.</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-xs uppercase text-muted tracking-wider mb-3">Avg Station Imbalance</div>
+        <div class="flex items-end gap-4">
+          <div><div class="text-muted text-xs mb-1">Before</div><div class="font-mono text-3xl font-bold text-muted">414.7</div></div>
+          <div class="text-accent text-xl mb-1">→</div>
+          <div><div class="text-accent text-xs mb-1">After</div><div class="font-mono text-3xl font-bold text-accent">331.8</div></div>
+        </div>
+        <p class="text-sm text-muted mt-4">At 20% rebalancing improvement — a 20% reduction in daily station variance from smarter truck routing.</p>
+      </div>
+    </div>
+
+    <!-- Comparison screenshot -->
+    <div class="mt-12 bg-card border border-border rounded-2xl overflow-hidden reveal">
+      <img src="assets/img/pbi-comparison.png" alt="Comparison dashboard with sliders"
+           class="w-full" loading="lazy" />
+    </div>
+
+    <!-- Narrative -->
+    <div class="mt-10 bg-gradient-to-br from-card to-surface border-l-4 border-accent rounded-r-2xl p-6 md:p-8 reveal">
+      <h3 class="font-display font-semibold text-xl mb-3">The story the sliders tell</h3>
+      <p class="text-sm md:text-base text-muted leading-relaxed">
+        Each slider corresponds to a real operational lever. Peak-hour smoothing maps to dynamic pricing or
+        late-start employer incentives. Member conversion maps to a marketing campaign. Rebalancing improvement
+        maps to truck-routing optimization. None require new capital expenditure — they are all operational tweaks.
+        The combined simulated outcome (MUR &rarr; 92%, SII &darr; 20%, PHDR &darr; to 25.5%) is <span class="text-text font-semibold">what a single quarter of focused work could produce</span>, not a long-term aspiration.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PROJECT MANAGEMENT ══════════════════ -->
+<section id="pm" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">08 · Project management</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">How we shipped this.</h2>
+      <p class="text-muted text-lg max-w-3xl">Project charter, responsibility matrix, and phase roadmap — the scaffolding that kept a five-person team aligned across a semester.</p>
+    </div>
+
+    <!-- Roadmap -->
+    <div class="mt-12 reveal">
+      <div class="text-xs uppercase text-muted tracking-wider mb-3">Roadmap</div>
+      <h3 class="font-display font-semibold text-2xl mb-6">Project phases</h3>
+
+      <div class="relative bg-card border border-border rounded-2xl p-6 md:p-8">
+        <!-- vertical spine -->
+        <div class="absolute left-8 md:left-12 top-8 bottom-8 w-px bg-gradient-to-b from-accent via-accent2 to-electric"></div>
+
+        <div class="space-y-8">
+          <!-- Phase 1 -->
+          <div class="relative pl-16 md:pl-24">
+            <div class="absolute left-6 md:left-10 top-1 w-5 h-5 rounded-full bg-accent border-4 border-surface shadow-lg shadow-accent/40"></div>
+            <div class="flex flex-wrap items-center gap-3 mb-1">
+              <span class="font-mono text-xs text-accent font-semibold">PHASE 01</span>
+              <span class="text-xs text-muted">Jan 15 — Feb 01, 2026</span>
+              <span class="chip">Completed</span>
+            </div>
+            <h4 class="font-display font-semibold text-lg">Discovery</h4>
+            <p class="text-sm text-muted mt-1">Problem framing, stakeholder interviews, data source selection (Citi Bike public trip-history).</p>
+          </div>
+
+          <!-- Phase 2 -->
+          <div class="relative pl-16 md:pl-24">
+            <div class="absolute left-6 md:left-10 top-1 w-5 h-5 rounded-full bg-accent border-4 border-surface shadow-lg shadow-accent/40"></div>
+            <div class="flex flex-wrap items-center gap-3 mb-1">
+              <span class="font-mono text-xs text-accent font-semibold">PHASE 02</span>
+              <span class="text-xs text-muted">Feb 02 — Feb 23, 2026</span>
+              <span class="chip">Completed</span>
+            </div>
+            <h4 class="font-display font-semibold text-lg">Design</h4>
+            <p class="text-sm text-muted mt-1">Data model + ER diagram, dashboard wireframes, KPI definitions (PHDR · MUR · SII).</p>
+          </div>
+
+          <!-- Phase 3 -->
+          <div class="relative pl-16 md:pl-24">
+            <div class="absolute left-6 md:left-10 top-1 w-5 h-5 rounded-full bg-accent2 border-4 border-surface shadow-lg shadow-accent2/40"></div>
+            <div class="flex flex-wrap items-center gap-3 mb-1">
+              <span class="font-mono text-xs text-accent2 font-semibold">PHASE 03</span>
+              <span class="text-xs text-muted">Feb 24 — Apr 09, 2026</span>
+              <span class="chip" style="background:rgba(59,130,246,.08); border-color:rgba(59,130,246,.3); color:#3b82f6;">Completed</span>
+            </div>
+            <h4 class="font-display font-semibold text-lg">Build</h4>
+            <p class="text-sm text-muted mt-1">Power Query cleaning → Power BI 7-page report → React + Vite app → Comparison simulator.</p>
+          </div>
+
+          <!-- Phase 4 -->
+          <div class="relative pl-16 md:pl-24">
+            <div class="absolute left-6 md:left-10 top-1 w-5 h-5 rounded-full bg-warn border-4 border-surface shadow-lg shadow-warn/40 ring-4 ring-warn/20 animate-pulse"></div>
+            <div class="flex flex-wrap items-center gap-3 mb-1">
+              <span class="font-mono text-xs text-warn font-semibold">PHASE 04</span>
+              <span class="text-xs text-muted">Apr 10 — Apr 27, 2026</span>
+              <span class="chip" style="background:rgba(249,115,22,.08); border-color:rgba(249,115,22,.3); color:#f97316;">In progress</span>
+            </div>
+            <h4 class="font-display font-semibold text-lg">Validate &amp; deploy</h4>
+            <p class="text-sm text-muted mt-1">Cross-checked PBI ↔ React numbers, deployed to Vercel, portfolio site scaffolded, GitHub Pages enabled.</p>
+          </div>
+
+          <!-- Phase 5 -->
+          <div class="relative pl-16 md:pl-24">
+            <div class="absolute left-6 md:left-10 top-1 w-5 h-5 rounded-full bg-electric border-4 border-surface shadow-lg shadow-electric/40"></div>
+            <div class="flex flex-wrap items-center gap-3 mb-1">
+              <span class="font-mono text-xs text-electric font-semibold">PHASE 05</span>
+              <span class="text-xs text-muted">Apr 28 — May 26, 2026</span>
+              <span class="chip" style="background:rgba(168,85,247,.08); border-color:rgba(168,85,247,.3); color:#a855f7;">Upcoming</span>
+            </div>
+            <h4 class="font-display font-semibold text-lg">Present</h4>
+            <p class="text-sm text-muted mt-1">5-minute live presentation (Apr 28 / May 5), final written report (May 26).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RACI -->
+    <div class="mt-14 reveal">
+      <div class="text-xs uppercase text-muted tracking-wider mb-3">Responsibility matrix</div>
+      <h3 class="font-display font-semibold text-2xl mb-6">Who owned what (RACI — summary)</h3>
+      <div class="bg-card border border-border rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-xs uppercase text-muted border-b border-border bg-surface">
+              <tr>
+                <th class="text-left py-3 px-4">Workstream</th>
+                <th class="text-center py-3 px-2">Nithin</th>
+                <th class="text-center py-3 px-2">Aditya</th>
+                <th class="text-center py-3 px-2">Rushi</th>
+                <th class="text-center py-3 px-2">Sandeep</th>
+                <th class="text-center py-3 px-2">Bharat</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/50">
+              <tr><td class="py-3 px-4">Data cleaning &amp; modelling</td>   <td class="text-center text-muted">C</td><td class="text-center text-accent font-bold">R</td><td class="text-center text-muted">C</td><td class="text-center text-muted">I</td><td class="text-center text-muted">I</td></tr>
+              <tr><td class="py-3 px-4">Power BI report</td>                 <td class="text-center text-accent font-bold">R</td><td class="text-center text-muted">C</td><td class="text-center text-warn font-bold">A</td><td class="text-center text-muted">I</td><td class="text-center text-muted">C</td></tr>
+              <tr><td class="py-3 px-4">KPI definitions (DAX)</td>            <td class="text-center text-muted">C</td><td class="text-center text-accent font-bold">R</td><td class="text-center text-warn font-bold">A</td><td class="text-center text-muted">C</td><td class="text-center text-muted">I</td></tr>
+              <tr><td class="py-3 px-4">React web app</td>                   <td class="text-center text-muted">I</td><td class="text-center text-muted">C</td><td class="text-center text-accent font-bold">R</td><td class="text-center text-warn font-bold">A</td><td class="text-center text-muted">C</td></tr>
+              <tr><td class="py-3 px-4">Comparison simulator</td>            <td class="text-center text-muted">I</td><td class="text-center text-muted">I</td><td class="text-center text-accent font-bold">R</td><td class="text-center text-muted">C</td><td class="text-center text-muted">C</td></tr>
+              <tr><td class="py-3 px-4">Deployment &amp; DevOps</td>           <td class="text-center text-muted">I</td><td class="text-center text-muted">I</td><td class="text-center text-accent font-bold">R</td><td class="text-center text-muted">I</td><td class="text-center text-muted">I</td></tr>
+              <tr><td class="py-3 px-4">Portfolio site &amp; presentation</td><td class="text-center text-accent font-bold">R</td><td class="text-center text-muted">C</td><td class="text-center text-muted">C</td><td class="text-center text-muted">C</td><td class="text-center text-warn font-bold">A</td></tr>
+              <tr><td class="py-3 px-4">Written report</td>                  <td class="text-center text-muted">C</td><td class="text-center text-muted">C</td><td class="text-center text-muted">I</td><td class="text-center text-accent font-bold">R</td><td class="text-center text-warn font-bold">A</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 border-t border-border text-xs text-muted bg-surface">
+          <span class="mr-4"><span class="text-accent font-bold">R</span> = Responsible (does the work)</span>
+          <span class="mr-4"><span class="text-warn font-bold">A</span> = Accountable (owns the outcome)</span>
+          <span class="mr-4"><span class="text-muted">C</span> = Consulted</span>
+          <span><span class="text-muted">I</span> = Informed</span>
+        </div>
+      </div>
+      <p class="text-xs text-muted mt-3 italic">
+        Full Project Charter and detailed Responsibility Matrix available in the appendix of the written report (3.1).
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ ETHICS ══════════════════ -->
+<section id="ethics" class="py-20 px-6 bg-surface">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">09 · Ethical &amp; social considerations</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">The parts of the project that aren't in the data.</h2>
+      <p class="text-muted text-lg max-w-3xl">Any system that allocates a scarce urban resource has social weight. We identified four concerns worth calling out explicitly.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mt-12">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-warn font-mono text-sm mb-2">01</div>
+        <h3 class="font-display font-semibold text-lg mb-3">Rider privacy</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          Citi Bike publishes trip data aggregated to the ride level with no rider identifier — we do not work with PII.
+          However, station + timestamp combinations could theoretically be correlated with an individual's known
+          locations. We therefore never present rider-level views and always aggregate to station or hour.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-warn font-mono text-sm mb-2">02</div>
+        <h3 class="font-display font-semibold text-lg mb-3">Equity of service</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          Optimizing purely for "most trips" reinforces existing service density in Manhattan and wealthy Brooklyn
+          zip codes, starving outer boroughs. Any deployment of this DSS should pair trip-volume KPIs with an
+          <em>equity</em> KPI — e.g. minimum acceptable service level by neighborhood.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-warn font-mono text-sm mb-2">03</div>
+        <h3 class="font-display font-semibold text-lg mb-3">Environmental framing</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          Every rebalancing truck mile partially offsets the carbon benefit of the shared bike. Our rebalancing
+          improvement slider has an implicit environmental upside: fewer trucks, fewer miles, fewer emissions per
+          trip served.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="text-warn font-mono text-sm mb-2">04</div>
+        <h3 class="font-display font-semibold text-lg mb-3">Algorithmic accountability</h3>
+        <p class="text-sm text-muted leading-relaxed">
+          This is a decision-support tool — humans remain in the loop. We explicitly did not automate dispatch or
+          pricing. Every KPI shown, every simulator setting, is a recommendation to a human operator, not an
+          autonomous action.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ LESSONS LEARNED ══════════════════ -->
+<section id="reflection" class="py-20 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">10 · Lessons learned &amp; team reflection</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">What we'd do differently next time.</h2>
+      <p class="text-muted text-lg max-w-3xl">Five people, one semester, two technology stacks. Honest retrospective below.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mt-12">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="chip mb-3">What worked</div>
+        <h4 class="font-display font-semibold text-lg mb-3">Splitting PBI and the React app early</h4>
+        <p class="text-sm text-muted leading-relaxed">
+          Treating the Power BI report and the React web app as two parallel deliverables (instead of one blocking the other) let two sub-teams work in parallel. The <code class="font-mono text-accent">data.json</code> snapshot exported from PBI acted as the contract between them.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="chip mb-3">What worked</div>
+        <h4 class="font-display font-semibold text-lg mb-3">Defining KPIs before building visuals</h4>
+        <p class="text-sm text-muted leading-relaxed">
+          Naming PHDR, MUR, and SII in week 2 meant every chart we built after had a clear reason to exist. Without those KPIs as anchors, the dashboard would have become a collection of pretty charts with no narrative.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="chip mb-3" style="background:rgba(249,115,22,.08); border-color:rgba(249,115,22,.3); color:#f97316;">What didn't</div>
+        <h4 class="font-display font-semibold text-lg mb-3">Underestimating data cleaning time</h4>
+        <p class="text-sm text-muted leading-relaxed">
+          We budgeted 1 week for Power Query work and spent 2.5 weeks. Null coordinates, duplicate station IDs, and 24-hour+ "stuck" trips each needed their own filter. Lesson: triple cleaning estimates for real-world transit data.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="chip mb-3" style="background:rgba(249,115,22,.08); border-color:rgba(249,115,22,.3); color:#f97316;">What didn't</div>
+        <h4 class="font-display font-semibold text-lg mb-3">Late PBI ↔ React number drift</h4>
+        <p class="text-sm text-muted leading-relaxed">
+          Early in development, the two stacks showed slightly different KPIs (994,641 vs 1,000,000 trips) because of different cleaning snapshots. We fixed this by re-aligning <code class="font-mono text-accent">data.json</code> to the PBI totals — but we should have defined a single canonical source from day one.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="chip mb-3">Next time</div>
+        <h4 class="font-display font-semibold text-lg mb-3">Add weather + holidays as covariates</h4>
+        <p class="text-sm text-muted leading-relaxed">
+          ~20% of daily variance is weather-driven. A follow-on version should join NOAA daily weather and NYC public holidays so the Comparison simulator can adjust baselines for conditions, not just operational levers.
+        </p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal">
+        <div class="chip mb-3">Next time</div>
+        <h4 class="font-display font-semibold text-lg mb-3">Ship a station-level map view</h4>
+        <p class="text-sm text-muted leading-relaxed">
+          The React app's station data includes lat/long, but the map visualization shipped only in Power BI. A Leaflet or Mapbox view in the app is the highest-leverage feature still on the backlog.
+        </p>
+      </div>
+    </div>
+
+    <!-- Team reflection banner -->
+    <div class="mt-12 bg-gradient-to-r from-accent/10 to-accent2/10 border border-accent/30 rounded-2xl p-8 reveal text-center">
+      <p class="text-lg text-text font-display italic max-w-3xl mx-auto">
+        "The hardest part of data-driven decision support isn't the data or the dashboards — it's picking the right three KPIs and having the discipline to keep every visual tied back to them."
+      </p>
+      <p class="text-sm text-muted mt-4">— Group 15 retrospective, April 2026</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ TEAM ══════════════════ -->
+<section id="team" class="py-20 px-6 bg-surface">
+  <div class="max-w-7xl mx-auto">
+    <div class="reveal">
+      <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">11 · Team</div>
+      <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">Group 15.</h2>
+      <p class="text-muted text-lg">Saint Louis University · Master's Research Project · Spring 2026</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-12">
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-accent/50 transition text-center">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-accent to-accent2 mx-auto mb-4 flex items-center justify-center font-display font-bold text-xl text-surface">NK</div>
+        <h4 class="font-display font-semibold">Nithin Kumar Adki</h4>
+        <p class="text-xs text-muted mt-1">Power BI · Presentation Lead</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-accent/50 transition text-center">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-accent2 to-electric mx-auto mb-4 flex items-center justify-center font-display font-bold text-xl text-surface">AA</div>
+        <h4 class="font-display font-semibold">Aditya Anguri</h4>
+        <p class="text-xs text-muted mt-1">Data Modelling · DAX</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-accent/50 transition text-center">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-electric to-warn mx-auto mb-4 flex items-center justify-center font-display font-bold text-xl text-surface">RG</div>
+        <h4 class="font-display font-semibold">Rushi Chandra Gannamaneni</h4>
+        <p class="text-xs text-muted mt-1">React App · Deployment</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-accent/50 transition text-center">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-warn to-danger mx-auto mb-4 flex items-center justify-center font-display font-bold text-xl text-surface">SN</div>
+        <h4 class="font-display font-semibold">Sandeep Eshwar Datta Narsin</h4>
+        <p class="text-xs text-muted mt-1">Written Report · QA</p>
+      </div>
+      <div class="bg-card border border-border rounded-2xl p-6 reveal hover:border-accent/50 transition text-center">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-danger to-accent mx-auto mb-4 flex items-center justify-center font-display font-bold text-xl text-surface">BP</div>
+        <h4 class="font-display font-semibold">Bharat Reddy Palukuri</h4>
+        <p class="text-xs text-muted mt-1">Project Management · Accountability</p>
+      </div>
+    </div>
+
+    <p class="text-xs text-muted text-center italic mt-6">Roles are indicative — full contribution detail in the RACI matrix above.</p>
+  </div>
+</section>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer class="py-14 px-6 border-t border-border bg-bg">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid md:grid-cols-4 gap-8">
+      <div class="md:col-span-2">
+        <div class="font-display font-bold text-accent text-xl mb-3">◆ Citi Bike DSS</div>
+        <p class="text-sm text-muted max-w-md leading-relaxed">
+          Master's Research Project · Group 15 · Saint Louis University · John Cook School of Business · Spring 2026.
+          Built with Power BI, React, Vite, and Recharts.
+        </p>
+      </div>
+      <div>
+        <div class="text-xs uppercase text-muted tracking-wider mb-3 font-semibold">Live links</div>
+        <ul class="space-y-2 text-sm">
+          <li><a href="https://citi-bike-dashboard.vercel.app/" target="_blank" rel="noopener" class="link-u hover:text-accent">Solution App</a></li>
+          <li><a href="https://drive.google.com/file/d/1sstMB7H-AJH3yhLMCLPFNX9jL8o-PNX1/view?usp=sharing" target="_blank" rel="noopener" class="link-u hover:text-accent">Power BI (.pbix)</a></li>
+          <li><a href="https://github.com/Rushi9099/CitiBike_Dashboard" target="_blank" rel="noopener" class="link-u hover:text-accent">GitHub Source</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="text-xs uppercase text-muted tracking-wider mb-3 font-semibold">Navigate</div>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#problem"    class="link-u hover:text-accent">Problem</a></li>
+          <li><a href="#dashboard"  class="link-u hover:text-accent">Dashboard</a></li>
+          <li><a href="#solution"   class="link-u hover:text-accent">Solution</a></li>
+          <li><a href="#team"       class="link-u hover:text-accent">Team</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-10 pt-6 border-t border-border flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs text-muted">
+      <div>© 2026 Group 15. Trip data © Lyft / Citi Bike.</div>
+      <div class="font-mono">build · portfolio-v1 · static</div>
+    </div>
+  </div>
+</footer>
+
+<!-- Mermaid for diagrams -->
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    gantt: {
+      leftPadding: 220,
+      rightPadding: 30,
+      topPadding: 50,
+      barHeight: 22,
+      barGap: 6,
+      sectionFontSize: 14,
+      fontSize: 13,
+      useMaxWidth: true,
+    },
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+    er: { useMaxWidth: true },
+    themeVariables: {
+      background: '#0a1929',
+      primaryColor: '#0f2d4a',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#1e3a5f',
+      lineColor: '#00d4aa',
+      secondaryColor: '#3b82f6',
+      tertiaryColor: '#0a1929',
+      fontFamily: 'DM Sans',
+      fontSize: '14px',
+      taskTextColor: '#e2e8f0',
+      taskTextOutsideColor: '#e2e8f0',
+      taskTextLightColor: '#e2e8f0',
+      sectionBkgColor: 'rgba(0,212,170,0.05)',
+      altSectionBkgColor: 'rgba(59,130,246,0.05)',
+      gridColor: '#1e3a5f',
+    },
+  });
+</script>
+
+<!-- Nav + reveal behaviors -->
+<script>
+  // Mobile burger
+  const burger = document.getElementById('burger');
+  const mobile = document.getElementById('mobile-menu');
+  burger?.addEventListener('click', () => mobile.classList.toggle('hidden'));
+  mobile?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobile.classList.add('hidden')));
+
+  // Reveal-on-scroll
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('on'); io.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id], header[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+  const setActive = () => {
+    const y = window.scrollY + 80;
+    let current = '';
+    sections.forEach(s => { if (s.offsetTop <= y) current = s.id; });
+    navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${current}`));
+  };
+  window.addEventListener('scroll', setActive, { passive: true });
+  setActive();
+</script>
+
+</body>
+</html>
