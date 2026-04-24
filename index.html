@@ -196,8 +196,7 @@
 <!-- ══════════════════ EXECUTIVE SUMMARY ══════════════════ -->
 <section id="summary" class="py-20 px-6 bg-surface">
   <div class="max-w-5xl mx-auto reveal">
-    <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">01 · Executive Summary</div>
-    <h2 class="font-display font-bold text-3xl md:text-5xl mb-8">The 60-second version.</h2>
+    <div class="text-accent font-mono text-sm uppercase tracking-wider mb-6">01 · Executive Summary</div>
     <div class="prose prose-invert prose-lg max-w-none text-muted leading-relaxed">
       <p>
         New York City's Citi Bike system serves over one million rides every month, yet riders still encounter empty docks during morning commutes
@@ -500,7 +499,7 @@ erDiagram
       <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">05 · Dashboard insights</div>
       <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">What the data is trying to tell us.</h2>
       <p class="text-muted text-lg max-w-3xl">
-        Six analytical pages in Power BI. Each answers a specific question a specific user actually asks.
+        Seven linked pages in Power BI. Each answers a specific question a specific user actually asks — and the last one lets you run what-if simulations.
       </p>
     </div>
 
@@ -616,6 +615,27 @@ erDiagram
       <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal order-1 md:order-2">
         <img src="assets/img/pbi-dataflow.png" alt="Data Flow and System Logic dashboard"
              class="w-full" loading="lazy" />
+      </div>
+    </div>
+
+    <!-- Dashboard card 7: COMPARISON -->
+    <div class="mt-14 grid md:grid-cols-5 gap-6 items-start">
+      <div class="md:col-span-3 bg-card border border-border rounded-2xl overflow-hidden reveal">
+        <img src="assets/img/pbi-comparison.png" alt="Comparison Dashboard — interactive what-if simulator"
+             class="w-full" loading="lazy" />
+      </div>
+      <div class="md:col-span-2 reveal">
+        <div class="chip mb-3" style="background:rgba(0,212,170,.08); border-color:rgba(0,212,170,.3);">Page 7 · interactive simulator</div>
+        <h3 class="font-display font-semibold text-2xl mb-3">Comparison · what if we act?</h3>
+        <p class="text-sm text-muted leading-relaxed mb-4">
+          The only page that moves beyond "what is" into "what could be". Three sliders — peak-hour smoothing, member conversion, rebalancing improvement — recompute the three KPIs live and draw the delta on every chart.
+        </p>
+        <ul class="space-y-2 text-sm text-muted">
+          <li class="flex gap-2"><span class="text-accent">→</span><span>Baseline PHDR <span class="font-mono text-text">28.4%</span> responds to demand-smoothing policy</span></li>
+          <li class="flex gap-2"><span class="text-accent">→</span><span>Baseline MUR <span class="font-mono text-text">81.08%</span> responds to member conversion</span></li>
+          <li class="flex gap-2"><span class="text-accent">→</span><span>Baseline SII <span class="font-mono text-text">414.7</span> responds to targeted rebalancing</span></li>
+        </ul>
+        <a href="#impact" class="inline-flex items-center gap-2 mt-5 text-sm text-accent link-u">See projected KPI movement →</a>
       </div>
     </div>
 
@@ -851,6 +871,102 @@ flowchart LR
       <div class="text-accent font-mono text-sm uppercase tracking-wider mb-3">08 · Project management</div>
       <h2 class="font-display font-bold text-3xl md:text-5xl mb-4">How we shipped this.</h2>
       <p class="text-muted text-lg max-w-3xl">Project charter, responsibility matrix, and phase roadmap — the scaffolding that kept a five-person team aligned across a semester.</p>
+    </div>
+
+    <!-- Project Charter -->
+    <div class="mt-12 reveal">
+      <div class="text-xs uppercase text-muted tracking-wider mb-3">Project charter</div>
+      <h3 class="font-display font-semibold text-2xl mb-6">What we committed to build</h3>
+
+      <div class="bg-card border border-border rounded-2xl overflow-hidden">
+        <!-- header strip -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border text-sm">
+          <div class="bg-surface p-5">
+            <div class="text-xs uppercase text-muted tracking-wider mb-1">Project</div>
+            <div class="font-display font-semibold">Citi Bike DSS</div>
+          </div>
+          <div class="bg-surface p-5">
+            <div class="text-xs uppercase text-muted tracking-wider mb-1">Sponsor</div>
+            <div class="font-display font-semibold">John Cook School of Business</div>
+          </div>
+          <div class="bg-surface p-5">
+            <div class="text-xs uppercase text-muted tracking-wider mb-1">Team</div>
+            <div class="font-display font-semibold">Group 15 · 5 members</div>
+          </div>
+          <div class="bg-surface p-5">
+            <div class="text-xs uppercase text-muted tracking-wider mb-1">Timeline</div>
+            <div class="font-display font-semibold">Jan 15 — May 26, 2026</div>
+          </div>
+        </div>
+
+        <!-- body -->
+        <div class="p-6 md:p-8 grid md:grid-cols-2 gap-x-10 gap-y-6 text-sm">
+          <!-- Objective -->
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-6 h-6 rounded-md bg-accent/15 text-accent flex items-center justify-center text-xs font-mono font-bold">◎</span>
+              <h4 class="font-display font-semibold">Objective</h4>
+            </div>
+            <p class="text-muted leading-relaxed">
+              Build a two-layer Decision Support System that turns Citi Bike's public trip-history data into actionable insights for service planners, operations managers, and leadership — and quantifies the projected impact of operational changes.
+            </p>
+          </div>
+
+          <!-- Scope -->
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-6 h-6 rounded-md bg-accent2/15 text-accent2 flex items-center justify-center text-xs font-mono font-bold">▣</span>
+              <h4 class="font-display font-semibold">Scope</h4>
+            </div>
+            <ul class="text-muted space-y-1.5">
+              <li class="flex gap-2"><span class="text-accent shrink-0">In ·</span><span>May 2025 NYC trip data, 3 KPIs (PHDR · MUR · SII), PBI + web app</span></li>
+              <li class="flex gap-2"><span class="text-danger shrink-0">Out ·</span><span>Real-time data, weather effects, other cities, rider-level PII</span></li>
+            </ul>
+          </div>
+
+          <!-- Success criteria -->
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-6 h-6 rounded-md bg-warn/15 text-warn flex items-center justify-center text-xs font-mono font-bold">✓</span>
+              <h4 class="font-display font-semibold">Success criteria</h4>
+            </div>
+            <ul class="text-muted space-y-1.5">
+              <li class="flex gap-2"><span class="text-accent shrink-0">·</span><span>All 3 KPIs computable from the cleaned dataset</span></li>
+              <li class="flex gap-2"><span class="text-accent shrink-0">·</span><span>PBI ↔ React web app KPI values match within 0.1%</span></li>
+              <li class="flex gap-2"><span class="text-accent shrink-0">·</span><span>Comparison simulator runs real-time on any modern browser</span></li>
+              <li class="flex gap-2"><span class="text-accent shrink-0">·</span><span>Site is publicly accessible without login</span></li>
+            </ul>
+          </div>
+
+          <!-- Deliverables -->
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-6 h-6 rounded-md bg-electric/15 text-electric flex items-center justify-center text-xs font-mono font-bold">⊟</span>
+              <h4 class="font-display font-semibold">Deliverables</h4>
+            </div>
+            <ul class="text-muted space-y-1.5">
+              <li class="flex gap-2"><span class="text-accent shrink-0">1 ·</span><span>Power BI .pbix — 7 pages, shared via Drive</span></li>
+              <li class="flex gap-2"><span class="text-accent shrink-0">2 ·</span><span>React web app — deployed to Vercel</span></li>
+              <li class="flex gap-2"><span class="text-accent shrink-0">3 ·</span><span>Portfolio site (this site) — GitHub Pages</span></li>
+              <li class="flex gap-2"><span class="text-accent shrink-0">4 ·</span><span>Written case-study report (3.1) — due May 26</span></li>
+              <li class="flex gap-2"><span class="text-accent shrink-0">5 ·</span><span>5-minute live presentation — Apr 28 / May 5</span></li>
+            </ul>
+          </div>
+
+          <!-- Risks / constraints -->
+          <div class="md:col-span-2 pt-4 mt-2 border-t border-border">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-6 h-6 rounded-md bg-danger/15 text-danger flex items-center justify-center text-xs font-mono font-bold">!</span>
+              <h4 class="font-display font-semibold">Constraints &amp; known risks</h4>
+            </div>
+            <div class="grid md:grid-cols-3 gap-5 text-muted">
+              <div><strong class="text-text">Data window:</strong> single month (May 2025) — seasonality is unmodeled.</div>
+              <div><strong class="text-text">Access:</strong> Power BI Service license unavailable — <code class="font-mono text-accent">.pbix</code> shared via Drive + mirrored in React app.</div>
+              <div><strong class="text-text">Simulator scope:</strong> operational levers only; no capital-expense or infrastructure changes modeled.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Roadmap -->
